@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashboard LMU</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="stage" class="flag-none">
+  <!-- Coin haut gauche : session, tours -->
+  <div id="tl">
+    <div class="lbl-row"><span id="session">COURSE</span><span id="clock" class="pill-dark">00:00:00</span></div>
+    <div class="split"><b id="lap">L-</b><i id="lap-total">-</i></div>
+  </div>
+
+  <!-- Réglages -->
+  <div id="tiles">
+    <div class="tile c-blue"   id="t-tc"><small>TC</small><b>-</b></div>
+    <div class="tile c-blue"   id="t-slip"><small>SLIP</small><b>-</b></div>
+    <div class="tile c-blue"   id="t-cut"><small>CUT</small><b>-</b></div>
+    <div class="tile c-red w2" id="t-bias"><small>BIAS</small><b>-</b></div>
+    <div class="tile c-amber"  id="t-abs"><small>ABS</small><b>-</b></div>
+    <div class="tile c-green"  id="t-map"><small>MAP</small><b>-</b></div>
+  </div>
+
+  <!-- Coin haut droit : position -->
+  <div id="tr">
+    <div class="lbl-row right"><span id="gain" class="pill-green">-</span><span id="class-tag" class="pill-class">LMP2</span></div>
+    <div class="split"><b id="pos">P-</b><i id="pos-total">-</i></div>
+    <div id="overall">GÉN. -/-</div>
+  </div>
+
+  <div id="leds"></div>
+
+  <!-- MULTI 1 : pneus -->
+  <div class="multi" id="m1">
+    <div class="m-title">PNEUS <span>°C · kPa</span></div>
+    <div class="tyres">
+      <div class="tyre" data-i="0"></div><div class="tyre" data-i="1"></div>
+      <div class="tyre" data-i="2"></div><div class="tyre" data-i="3"></div>
+    </div>
+  </div>
+
+  <!-- MULTI 2 : carburant & chrono -->
+  <div class="multi right" id="m2">
+    <div class="m-title">CARBURANT</div>
+    <div class="kv"><span>NIVEAU</span><b id="fuel-level">-</b></div>
+    <div class="kv"><span>CONSO / TOUR</span><b id="fuel-per-lap">-</b></div>
+    <div class="kv big"><span>TOURS POSSIBLES</span><b id="fuel-laps">-</b></div>
+    <div class="m-title sep">CHRONO</div>
+    <div class="kv"><span>MEILLEUR</span><b id="lap-best" class="purple">-</b></div>
+    <div class="kv"><span>DERNIER</span><b id="lap-last">-</b></div>
+    <div class="kv"><span>EN COURS</span><b id="lap-current">-</b></div>
+    <div class="kv"><span>ESTIMÉ</span><b id="lap-pred">-</b></div>
+  </div>
+
+  <!-- Arcs + rapport -->
+  <svg id="arcs" viewBox="0 0 1280 720" aria-hidden="true">
+    <defs>
+      <linearGradient id="grad" x1="0" y1="1" x2="0" y2="0">
+        <stop offset="0" stop-color="#22e05a"/><stop offset=".45" stop-color="#ff9a1a"/><stop offset=".8" stop-color="#ff2a3a"/><stop offset="1" stop-color="#ff2a3a"/>
+      </linearGradient>
+      <linearGradient id="gradFuel" x1="0" y1="1" x2="0" y2="0">
+        <stop offset="0" stop-color="#ff2a3a"/><stop offset=".25" stop-color="#ff9a1a"/><stop offset=".55" stop-color="#22e05a"/><stop offset="1" stop-color="#22e05a"/>
+      </linearGradient>
+    </defs>
+    <path class="track" d="M 448 560 Q 372 360 448 160"/>
+    <path id="arc-rpm" class="fill" stroke="url(#grad)" pathLength="100" d="M 448 560 Q 372 360 448 160"/>
+    <path class="track thin" d="M 478 530 Q 420 360 478 190"/>
+    <path id="arc-brake" class="fill thin" stroke="#ff2a3a" pathLength="100" d="M 478 530 Q 420 360 478 190"/>
+    <path class="track" d="M 832 560 Q 908 360 832 160"/>
+    <path id="arc-fuel" class="fill" stroke="url(#gradFuel)" pathLength="100" d="M 832 560 Q 908 360 832 160"/>
+    <path class="track thin" d="M 802 530 Q 860 360 802 190"/>
+    <path id="arc-thr" class="fill thin" stroke="#22e05a" pathLength="100" d="M 802 530 Q 860 360 802 190"/>
+  </svg>
+  <div id="arc-l-lbl">RPM</div>
+  <div id="arc-r-lbl"><b id="fuel-pct">-</b><small>ESSENCE</small></div>
+
+  <div id="speed">0</div>
+  <div id="gear-prev" class="side">-</div>
+  <div id="gear">N</div>
+  <div id="gear-next" class="side">-</div>
+  <div id="rpm">0</div>
+
+  <!-- Ligne d'infos au-dessus du bas -->
+  <div id="info-l"><span id="limiter" class="pill-blue hidden">PIT LIMITER</span><span id="wet" class="pill-wet hidden">WET</span></div>
+  <div id="info-r"><span id="inc" class="pill-red hidden">INC</span><span id="laps-left">-</span></div>
+
+  <!-- Bas -->
+  <div id="b-weather" class="box">
+    <div><small>AIR</small><b id="air">-</b></div>
+    <div><small>PISTE</small><b id="trk">-</b></div>
+  </div>
+  <div id="b-ahead" class="box rival">
+    <div class="r-top"><span id="ahead-name">-</span><i id="ahead-pos" class="badge">-</i></div>
+    <b id="gap-ahead">-</b>
+  </div>
+  <div id="b-delta" class="box"><small>DELTA</small><b id="delta">±0.000</b></div>
+  <div id="b-behind" class="box rival">
+    <div class="r-top"><i id="behind-pos" class="badge">-</i><span id="behind-name">-</span></div>
+    <b id="gap-behind">-</b>
+  </div>
+  <div id="b-time" class="box">
+    <div><small>RESTANT</small><b id="time-left">-</b></div>
+    <div><small>HEURE</small><b id="tod" class="dim">-</b></div>
+  </div>
+
+  <div id="flagbar"><span id="flag-text"></span></div>
+  <div id="alerts"></div>
+</div>
+
+<footer id="bar">
+  <span id="status" class="status status-off">Déconnecté</span>
+  <span id="info"></span>
+  <span class="spacer"></span>
+  <button id="btn-demo" type="button">Démo (D)</button>
+  <button id="btn-full" type="button">Plein écran (F11)</button>
+</footer>
+<script src="demo.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
