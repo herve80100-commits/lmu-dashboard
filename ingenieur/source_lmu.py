@@ -43,7 +43,10 @@ class SourceLMU:
         if snap is None or snap.version == 0:
             self.message = "En attente de Le Mans Ultimate…"
             return Etat(t=t)
-        if not snap.has_vehicle or snap.telem is None:
+        p = snap.player_scoring
+        # Muet tant que le joueur n'est pas au volant en piste (menus, garage, replay, moniteur)
+        if (not snap.has_vehicle or snap.telem is None or p is None or not snap.info.mInRealtime
+                or p.mInGarageStall or p.mControl != 0):
             self.message = "LMU détecté : monte en piste."
             return Etat(t=t)
         self.message = "Connecté à Le Mans Ultimate"
