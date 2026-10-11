@@ -108,7 +108,9 @@ class SourceLMU:
 
         e.pneus = []
         for w in tel.mWheels:
-            temps = [x - KELVIN for x in w.mTemperature]
+            # température « cœur » (comme l'affichage du jeu), la surface refroidit trop vite
+            coeur = [x - KELVIN for x in w.mTireInnerLayerTemperature]
+            temps = coeur if min(coeur) > -100 and max(coeur) > 0 else [x - KELVIN for x in w.mTemperature]
             e.pneus.append(Pneu(
                 usure=max(0.0, min(1.0, 1.0 - w.mWear)),
                 temp=sum(temps) / 3,
@@ -127,7 +129,33 @@ class SourceLMU:
         e.temp_air = float(info.mAmbientTemp)
 
         e.voisins = self._voisins(snap, tel)
+        lent, bleu = self._trafic(snap, p, e.vitesse, e.session)
+        e.sous_jaune = e.sous_jaune or (lent and e.phase == 5)
+        e.drapeau_bleu = e.drapeau_bleu or bleu
         return e
+
+    @staticmethod
+    def _trafic(snap, p, vitesse, session):
+        """Voiture lente/arrêtée devant (jaune) et voiture plus rapide qui arrive (bleu)."""
+        long_piste = snap.info.mLapDist
+        if long_piste <= 0:
+            return False, False
+        lent = bleu = False
+        for v in snap.vehicles:
+            if v.mIsPlayer or v.mInPits or v.mFinishStatus:
+                continue
+            vv = v.mLocalVel
+            kmh = math.sqrt(vv.x ** 2 + vv.y ** 2 + vv.z ** 2) * 3.6
+            d = (v.mLapDist - p.mLapDist) % long_piste  # distance devant
+            if 0 < d < 350 and kmh < 50 and vitesse > 60:
+                lent = True
+            derriere = long_piste - d
+            if 0 < derriere < 60 and kmh > vitesse + 5:
+                autre_classe = v.mVehicleClass != p.mVehicleClass
+                prend_tour = session == "course" and v.mTotalLaps > p.mTotalLaps
+                if autre_classe or prend_tour:
+                    bleu = True
+        return lent, bleu
 
     def _voisins(self, snap, tel) -> list:
         """Position des autres voitures dans le repère de la voiture du joueur.

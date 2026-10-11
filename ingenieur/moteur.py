@@ -239,7 +239,7 @@ class Moteur:
             self._dire(e, "Drapeau bleu, laisse passer la voiture derrière.", URGENT, "drapeaux",
                        cle="bleu", attente=30)
         if e.sous_jaune and not p.sous_jaune and e.phase == 5:
-            self._dire(e, "Drapeau jaune, prudence, pas de dépassement.", URGENT, "drapeaux",
+            self._dire(e, "Drapeau jaune, prudence, voiture lente ou arrêtée devant.", URGENT, "drapeaux",
                        cle="jaune", attente=15)
         elif p.sous_jaune and not e.sous_jaune and e.phase == 5:
             self._dire(e, "Piste dégagée.", NORMAL, "drapeaux", cle="vert", attente=15)
@@ -289,7 +289,7 @@ class Moteur:
     def _froid(self, e: Etat) -> None:
         pn = [x for x in e.pneus]
         opt = pn[0].optimal or 85.0
-        froids = sum(x.temp for x in pn) / 4 < opt - 20
+        froids = sum(x.temp for x in pn) / 4 < min(opt - 30, 55)
         freins = max(x.frein for x in pn) < 250
         if froids or freins:
             quoi = " et ".join(m for m, c in (("pneus", froids), ("freins", freins)) if c)
@@ -546,6 +546,6 @@ class Moteur:
             if temp > opt + 15:
                 self._dire(e, f"Pneus {nom} trop chauds, {round(temp)} degrés.", INFO, "pneus",
                            cle=f"chaud{nom}", attente=150)
-            elif temp < opt - 25:
+            elif temp < min(opt - 30, 55):
                 self._dire(e, f"Pneus {nom} froids, {round(temp)} degrés.", INFO, "pneus",
                            cle=f"froid{nom}", attente=150)
