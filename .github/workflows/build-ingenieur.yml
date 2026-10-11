@@ -25,7 +25,7 @@ jobs:
       - name: Vérifier la voix Windows
         run: python -c "import win32com.client as w; v=w.Dispatch('SAPI.SpVoice'); print([t.GetDescription() for t in v.GetVoices()])"
       - name: Construire l'exe
-        run: python -m PyInstaller --noconfirm --clean --onefile --windowed --name "Ingenieur LMU" --paths ingenieur --hidden-import win32com.client --hidden-import pythoncom ingenieur/appli.py
+        run: python -m PyInstaller --noconfirm --clean --onefile --windowed --name "Ingenieur LMU" --paths ingenieur --hidden-import win32com.client --hidden-import pythoncom --icon ingenieur/icone.ico --add-data "ingenieur/icone.png;." ingenieur/appli.py
       - uses: actions/upload-artifact@v4
         with:
           name: Ingenieur-LMU-exe

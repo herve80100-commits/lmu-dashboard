@@ -119,6 +119,12 @@ def fenetre(cfg: dict, mode_initial: str | None) -> None:
 
     root = tk.Tk()
     root.title("Ingénieur LMU")
+    try:
+        base = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
+        root._icone = tk.PhotoImage(file=os.path.join(base, "icone.png"))
+        root.iconphoto(True, root._icone)
+    except Exception:
+        pass
     root.geometry("760x560")
     root.configure(bg="#111418")
     style = ttk.Style(root)
