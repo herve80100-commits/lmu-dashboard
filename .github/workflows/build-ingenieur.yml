@@ -1,0 +1,37 @@
+name: Construire l'Ingénieur LMU
+
+on:
+  push:
+    branches: [main, "claude/**"]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Tests du moteur d'annonces
+        run: python tests/test_ingenieur.py
+      - name: Dépendances
+        run: python -m pip install -r ingenieur/requirements.txt
+      - name: Vérifier la voix Windows
+        run: python -c "import win32com.client as w; v=w.Dispatch('SAPI.SpVoice'); print([t.GetDescription() for t in v.GetVoices()])"
+      - name: Construire l'exe
+        run: python -m PyInstaller --noconfirm --clean --onefile --windowed --name "Ingenieur LMU" --paths ingenieur --hidden-import win32com.client --hidden-import pythoncom ingenieur/appli.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Ingenieur-LMU-exe
+          path: dist/Ingenieur LMU.exe
+      - name: Publier la version
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/Ingenieur LMU.exe
