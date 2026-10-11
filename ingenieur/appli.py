@@ -126,13 +126,22 @@ def fenetre(cfg: dict, mode_initial: str | None) -> None:
         style.theme_use("clam")
     except Exception:
         pass
-    fond, texte, accent = "#111418", "#e8edf2", "#ff7a1a"
+    fond, texte, accent = "#0d1b2a", "#f1f5f9", "#ff7a1a"
+    root.configure(bg=fond)
     for w in ("TFrame", "TLabelframe", "TCheckbutton", "TRadiobutton", "TLabel"):
         style.configure(w, background=fond, foreground=texte)
     style.configure("TLabelframe.Label", background=fond, foreground=accent, font=("Segoe UI", 10, "bold"))
     style.configure("Titre.TLabel", font=("Segoe UI", 16, "bold"), foreground=accent)
-    style.configure("TButton", font=("Segoe UI", 10, "bold"))
+    style.configure("TButton", font=("Segoe UI", 10, "bold"), background="#ff7a1a", foreground="#0d1b2a")
+    style.map("TButton", background=[("active", "#ffb347")])
+    for nom, coul in (("Source", "#00d084"), ("Voix", "#4fc3f7"), ("Annonces", "#c77dff"), ("Radio", "#ffd166")):
+        style.configure(f"{nom}.TLabelframe", background=fond, bordercolor=coul, lightcolor=coul, darkcolor=coul)
+        style.configure(f"{nom}.TLabelframe.Label", background=fond, foreground=coul, font=("Segoe UI", 11, "bold"))
+    style.configure("TCheckbutton", indicatorcolor="#1e3a5f")
+    style.map("TCheckbutton", indicatorcolor=[("selected", "#00d084")])
+    style.map("TRadiobutton", indicatorcolor=[("selected", "#ff7a1a")])
 
+    tk.Frame(root, bg="#ff7a1a", height=5).pack(fill="x")
     haut = ttk.Frame(root, padding=10)
     haut.pack(fill="x")
     ttk.Label(haut, text="🎧 Ingénieur LMU", style="Titre.TLabel").pack(side="left")
@@ -143,7 +152,7 @@ def fenetre(cfg: dict, mode_initial: str | None) -> None:
     milieu.pack(fill="x")
 
     # --- source
-    src = ttk.LabelFrame(milieu, text="Source", padding=8)
+    src = ttk.LabelFrame(milieu, text="Source", padding=8, style="Source.TLabelframe")
     src.pack(side="left", fill="y", padx=(0, 8))
     mode = tk.StringVar(value=mode_initial or "jeu")
     ttk.Radiobutton(src, text="Le Mans Ultimate", variable=mode, value="jeu").pack(anchor="w")
@@ -151,7 +160,7 @@ def fenetre(cfg: dict, mode_initial: str | None) -> None:
     ttk.Button(src, text="▶ Démarrer", command=lambda: boucle.demarrer(mode.get())).pack(fill="x", pady=(8, 2))
 
     # --- voix
-    vx = ttk.LabelFrame(milieu, text="Voix", padding=8)
+    vx = ttk.LabelFrame(milieu, text="Voix", padding=8, style="Voix.TLabelframe")
     vx.pack(side="left", fill="y", padx=(0, 8))
     voix_var = tk.StringVar(value=cfg["voix"] or "")
     combo = ttk.Combobox(vx, textvariable=voix_var, state="readonly", width=28)
@@ -176,7 +185,7 @@ def fenetre(cfg: dict, mode_initial: str | None) -> None:
                 URGENT, "test", 0.0))).pack(fill="x", pady=(8, 0))
 
     # --- annonces
-    an = ttk.LabelFrame(milieu, text="Annonces", padding=8)
+    an = ttk.LabelFrame(milieu, text="Annonces", padding=8, style="Annonces.TLabelframe")
     an.pack(side="left", fill="both", expand=True)
     cases = {}
 
@@ -199,12 +208,13 @@ def fenetre(cfg: dict, mode_initial: str | None) -> None:
                     command=maj_cat).grid(row=6, column=0, columnspan=2, sticky="w")
 
     # --- journal radio
-    bas = ttk.LabelFrame(root, text="Radio", padding=6)
+    bas = ttk.LabelFrame(root, text="Radio", padding=6, style="Radio.TLabelframe")
     bas.pack(fill="both", expand=True, padx=10, pady=10)
-    log = tk.Text(bas, bg="#0b0d10", fg=texte, font=("Consolas", 11), relief="flat", wrap="word",
+    log = tk.Text(bas, bg="#06111c", fg=texte, font=("Consolas", 11), relief="flat", wrap="word",
                   state="disabled")
     log.pack(fill="both", expand=True)
-    log.tag_configure("spot", foreground="#4fc3f7")
+    log.tag_configure("spot", foreground="#4fc3f7", font=("Consolas", 12, "bold"))
+    log.tag_configure("info", foreground="#00d084")
     log.tag_configure("urg", foreground="#ff5252")
     log.tag_configure("heure", foreground="#6b7480")
 
@@ -222,7 +232,7 @@ def fenetre(cfg: dict, mode_initial: str | None) -> None:
             h, txt, prio = journal.get()
             log.configure(state="normal")
             log.insert("end", h + "  ", "heure")
-            log.insert("end", txt + "\n", "spot" if prio == SPOTTER else "urg" if prio <= URGENT else "")
+            log.insert("end", txt + "\n", "spot" if prio == SPOTTER else "urg" if prio <= URGENT else "info")
             log.see("end")
             log.configure(state="disabled")
         etat_var.set(boucle.message + (f"  —  {radio.info}" if radio.info else ""))

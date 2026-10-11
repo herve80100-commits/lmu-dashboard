@@ -79,6 +79,11 @@ def etat(t: float) -> Etat:
 
     e.vitesse = 0.0 if e.phase in (0, 4, 8) else (120.0 if e.phase == 3 else 215.0)
     e.position = _position(t)
+    e.position_generale, e.nb_total = e.position + 4, 22
+    if n:
+        lt = TOURS[n - 1]
+        e.secteurs = (lt * 0.33 + (0.2 if n % 2 else -0.15), lt * 0.34 - (0.25 if n % 3 == 0 else -0.1), 0)
+        e.secteurs = (e.secteurs[0], e.secteurs[1], lt - e.secteurs[0] - e.secteurs[1])
 
     # écarts devant / derrière (interpolés par tour)
     devant = [2.6, 1.9, 1.1, 2.4, 2.1, 1.5, 3.0, 2.2, 1.6]

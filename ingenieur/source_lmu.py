@@ -90,6 +90,10 @@ class SourceLMU:
         cls = p.mVehicleClass
         voitures = sorted((x for x in snap.vehicles if x.mVehicleClass == cls), key=lambda x: x.mPlace)
         e.nb_classe = len(voitures)
+        e.position_generale = int(p.mPlace)
+        e.nb_total = len(snap.vehicles)
+        if p.mLastLapTime > 0 and p.mLastSector2 > p.mLastSector1 > 0:
+            e.secteurs = (p.mLastSector1, p.mLastSector2 - p.mLastSector1, p.mLastLapTime - p.mLastSector2)
         idx = next((i for i, x in enumerate(voitures) if x.mIsPlayer), None)
         if idx is not None:
             e.position = idx + 1

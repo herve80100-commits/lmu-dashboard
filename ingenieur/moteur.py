@@ -11,6 +11,7 @@ import math
 from dataclasses import dataclass
 
 from etat import ROUES, Etat, chrono, nombre, place, secondes
+from etat import secondes as secteurs_txt
 
 SPOTTER, URGENT, NORMAL, INFO = 0, 1, 2, 3
 
@@ -330,6 +331,31 @@ class Moteur:
             self._dire(e, "La pluie s'arrête.", INFO, "course", cle="pluie", attente=60)
 
     # ----------------------------------------------------------------- position
+    @staticmethod
+    def _general(e: Etat) -> str:
+        if e.position_generale and e.nb_total > e.nb_classe:
+            return f", {e.position_generale} au général"
+        return ""
+
+    def _secteurs(self, e: Etat) -> None:
+        """Compare les secteurs du tour à tes meilleurs secteurs."""
+        if not e.secteurs:
+            return
+        best = getattr(self, "best_secteurs", None)
+        if best:
+            diffs = [s - b for s, b in zip(e.secteurs, best)]
+            vite = min(range(3), key=lambda i: diffs[i])
+            lent = max(range(3), key=lambda i: diffs[i])
+            parts = []
+            if diffs[vite] < -0.05:
+                parts.append(f"Plus rapide au secteur {vite + 1}, {secteurs_txt(-diffs[vite])} de mieux")
+            if diffs[lent] > 0.1 and lent != vite:
+                parts.append(f"tu perds {secteurs_txt(diffs[lent])} au secteur {lent + 1}")
+            if parts:
+                txt = ", ".join(parts)
+                self._dire(e, txt[0].upper() + txt[1:] + ".", INFO, "chrono", vie=20)
+        self.best_secteurs = [min(a, b) for a, b in zip(best, e.secteurs)] if best else list(e.secteurs)
+
     def _position(self, p: Etat, e: Etat) -> None:
         if e.session != "course" or not e.position or e.phase not in (5, 6):
             self.pos_annoncee = e.position or self.pos_annoncee
@@ -343,7 +369,7 @@ class Moteur:
         if e.position != self.pos_annoncee and e.t - self.pos_depuis >= 2.0:
             gagne = e.position < self.pos_annoncee
             debut = "Position gagnée" if gagne else "Position perdue"
-            self._dire(e, f"{debut}, tu es {place(e.position)}.", NORMAL, "course")
+            self._dire(e, f"{debut}, tu es {place(e.position)} en catégorie{self._general(e)}.", NORMAL, "course")
             self.pos_annoncee = e.position
             self.ecarts_hist = []  # ce ne sont plus les mêmes voitures devant / derrière
 
@@ -451,8 +477,13 @@ class Moteur:
                 self._dire(e, f"Tour en {chrono(lap)}.", INFO, "chrono")
         elif not course or self.chrono_chaque_tour:
             self._dire(e, f"{chrono(lap)}, {secondes(lap - ancien)} plus lent.", INFO, "chrono")
+        if not stand:
+            self._secteurs(e)
         if course:
             self._ecarts_periodiques(e)
+            if e.tours_faits % 2 == 0 and e.position:
+                self._dire(e, f"Classement : tu es {place(e.position)} en catégorie{self._general(e)}.", INFO,
+                           "course", vie=20)
 
     # ------------------------------------------------------------------- écarts
     def _ecarts_periodiques(self, e: Etat) -> None:

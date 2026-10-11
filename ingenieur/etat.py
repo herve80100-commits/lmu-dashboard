@@ -55,6 +55,9 @@ class Etat:
 
     position: int = 0  # dans la catégorie
     nb_classe: int = 0
+    position_generale: int = 0
+    nb_total: int = 0
+    secteurs: tuple | None = None  # (S1, S2, S3) du dernier tour, en s
     ecart_devant: float | None = None  # s
     ecart_derriere: float | None = None  # s
 
