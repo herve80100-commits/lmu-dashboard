@@ -123,6 +123,8 @@ class SourceLMU:
         e.surchauffe = bool(tel.mOverheating)
         e.degats = int(sum(tel.mDentSeverity))
         e.pluie = float(info.mRaining)
+        e.temp_piste = float(info.mTrackTemp)
+        e.temp_air = float(info.mAmbientTemp)
 
         e.voisins = self._voisins(snap, tel)
         return e
@@ -140,7 +142,9 @@ class SourceLMU:
         ax_z = (o[0].z, o[1].z, o[2].z)
         aux_stands = {x.mID for x in snap.vehicles if x.mInPits}
         out = []
-        for vid, (x, y, z) in snap.positions.items():
+        pos = {v.mID: (v.mPos.x, v.mPos.y, v.mPos.z) for v in snap.vehicles}
+        pos.update({k: p for k, p in snap.positions.items() if any(p)})
+        for vid, (x, y, z) in pos.items():
             if vid == tel.mID or vid in aux_stands:
                 continue
             dx, dy, dz = x - px, y - py, z - pz

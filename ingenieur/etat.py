@@ -68,6 +68,8 @@ class Etat:
     surchauffe: bool = False
     degats: int = 0  # somme des niveaux de dégâts carrosserie (0..16)
     pluie: float = 0.0  # 0..1
+    temp_piste: float | None = None  # °C
+    temp_air: float | None = None  # °C
 
     # Voitures proches dans le repère du joueur : (latéral m, longitudinal m)
     # latéral > 0 = à gauche ; longitudinal > 0 = devant

@@ -56,7 +56,7 @@ class Spotter:
         return self.gauche or self.droite
 
     def maj(self, e: Etat) -> list[str]:
-        if e.vitesse < 30 or e.au_stand:
+        if e.vitesse < 15 or e.au_stand:
             g = d = False
             self.vu_g = self.vu_d = -1e9
         else:
@@ -161,7 +161,11 @@ class Moteur:
         if p is None:
             if not self.bienvenue:
                 self.bienvenue = True
-                self._dire(e, "Radio OK, je suis avec toi.", NORMAL, "course")
+                txt = "Radio OK, je suis avec toi."
+                if e.temp_piste is not None:
+                    txt += f" Piste à {round(e.temp_piste)} degrés, air à {round(e.temp_air or 0)}."
+                self._dire(e, txt, NORMAL, "course")
+                self._froid(e)
             self._init_tour(e)
             self.meilleur = e.meilleur_tour
             self.prec = e
@@ -277,8 +281,20 @@ class Moteur:
                     txt += (f" Tu as {round(e.carburant)} litres, assez pour finir." if tours >= reste + 0.3
                             else f" Tu as {round(e.carburant)} litres, de quoi faire {int(tours)} tours.")
                 self._dire(e, txt, NORMAL, "stands")
+        if p.au_stand and not e.au_stand:
+            self._froid(e)
         if (e.etat_stand == 2 or (e.au_stand and not p.au_stand)) and not e.limiteur and e.vitesse > 70:
             self._dire(e, "Limiteur ! Limiteur !", URGENT, "stands", cle="limiteur", attente=6, vie=3)
+
+    def _froid(self, e: Etat) -> None:
+        pn = [x for x in e.pneus]
+        opt = pn[0].optimal or 85.0
+        froids = sum(x.temp for x in pn) / 4 < opt - 20
+        freins = max(x.frein for x in pn) < 250
+        if froids or freins:
+            quoi = " et ".join(m for m, c in (("pneus", froids), ("freins", freins)) if c)
+            self._dire(e, f"Attention, {quoi} froids, vas-y doucement ce tour.", NORMAL, "pneus",
+                       cle="froid_sortie", attente=30)
 
     # ---------------------------------------------------------------- mécanique
     def _mecanique(self, p: Etat, e: Etat) -> None:
@@ -459,7 +475,7 @@ class Moteur:
                 diff = b1 - b0
                 if diff <= -0.5:
                     parts.append(f"La voiture derrière revient, elle est à {secondes(b1)}.")
-        if not parts and n % 3 == 0:
+        if not parts:
             if e.ecart_devant is not None and e.position > 1:
                 parts.append(f"Écart devant {secondes(e.ecart_devant)}.")
             if e.ecart_derriere is not None and e.position < e.nb_classe:
