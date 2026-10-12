@@ -31,7 +31,7 @@ class Wheel(_S):
         ("mSuspensionDeflection", ctypes.c_double),
         ("mRideHeight", ctypes.c_double),
         ("mSuspForce", ctypes.c_double),
-        ("mBrakeTemp", ctypes.c_double),  # °C
+        ("mBrakeTemp", ctypes.c_double),  # Kelvin dans LMU
         ("mBrakePressure", ctypes.c_double),
         ("mRotation", ctypes.c_double),
         ("mLateralPatchVel", ctypes.c_double),

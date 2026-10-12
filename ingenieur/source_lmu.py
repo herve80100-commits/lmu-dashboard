@@ -28,8 +28,6 @@ class SourceLMU:
     def __init__(self, inverser_cotes: bool = False) -> None:
         self.reader = None
         self.inverser = inverser_cotes
-        self.freins_kelvin = None  # unité de mBrakeTemp, déduite en piste
-        self.cle_freins = None
         self.message = "En attente de Le Mans Ultimate…"
 
     def lire(self) -> Etat:
@@ -112,18 +110,6 @@ class SourceLMU:
         e.limites_pas = int(tel.mTrackLimitsSteps)
         e.limites_par_penalite = int(info.mTrackLimitsStepsPerPenalty)
 
-        # mBrakeTemp est documenté en °C mais certaines versions le donnent en kelvins :
-        # des freins ne descendent jamais sous l'air ambiant, ce qui permet de trancher.
-        if self.cle_freins != e.cle:
-            self.cle_freins, self.freins_kelvin = e.cle, None
-        bruts = [float(w.mBrakeTemp) for w in tel.mWheels]
-        seuil = float(info.mAmbientTemp) + KELVIN - 15
-        if min(bruts) < seuil:
-            self.freins_kelvin = False
-        elif self.freins_kelvin is None:
-            self.freins_kelvin = True
-        corr = KELVIN if self.freins_kelvin else 0.0
-
         e.pneus = []
         for w in tel.mWheels:
             # température « cœur » (comme l'affichage du jeu), la surface refroidit trop vite
@@ -134,7 +120,7 @@ class SourceLMU:
                 temp=sum(temps) / 3,
                 optimal=float(w.mOptimalTemp) if w.mOptimalTemp > 0 else None,
                 pression=float(w.mPressure),
-                frein=float(w.mBrakeTemp) - corr,
+                frein=float(w.mBrakeTemp) - KELVIN,  # LMU donne des kelvins (doc rF2 : °C, faux)
                 crevaison=bool(w.mFlat),
                 detache=bool(w.mDetached),
             ))
