@@ -40,10 +40,10 @@ class Annonce:
 class Spotter:
     """Voiture à gauche / à droite / trois de front / dégagé."""
 
-    LONGUEUR = 5.0  # m : chevauchement longitudinal
+    LONGUEUR = 8.5  # m : on prévient avant le chevauchement (voiture ~5 m + marge)
     LARGEUR_MAX = 5.5  # m : au-delà, la voiture n'est pas « à côté »
     LARGEUR_MIN = 0.8  # m : en dessous, c'est la même ligne (devant/derrière)
-    DELAI_DEGAGE = 0.35  # s sans voiture avant d'annoncer « dégagé »
+    DELAI_DEGAGE = 1.2  # s sans voiture avant d'annoncer « dégagé »
     TOUJOURS_LA = 6.0  # s de chevauchement avant « toujours là »
 
     def __init__(self) -> None:

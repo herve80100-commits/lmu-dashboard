@@ -154,11 +154,10 @@ class SourceLMU:
             if 0 < d < 350 and kmh < 50 and vitesse > 60:
                 lent = True
             derriere = long_piste - d
-            if 0 < derriere < 60 and kmh > vitesse + 5:
-                autre_classe = v.mVehicleClass != p.mVehicleClass
-                prend_tour = session == "course" and v.mTotalLaps > p.mTotalLaps
-                if autre_classe or prend_tour:
-                    bleu = True
+            # bleu calculé seulement en course : voiture qui te prend un tour, juste derrière et nettement plus rapide
+            if (session == "course" and 0 < derriere < 50 and kmh > vitesse + 15
+                    and v.mTotalLaps > p.mTotalLaps and vitesse > 60):
+                bleu = True
         return lent, bleu
 
     def _voisins(self, snap, tel) -> list:
