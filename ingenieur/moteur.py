@@ -21,7 +21,8 @@ CATEGORIES = {
     "ecarts": "Écarts devant / derrière",
     "chrono": "Temps au tour",
     "carburant": "Carburant et énergie",
-    "pneus": "Pneus et freins",
+    "pneus": "Pneus",
+    "freins": "Température des freins",
     "meca": "Moteur et dégâts",
     "drapeaux": "Drapeaux et pénalités",
     "stands": "Stands",
@@ -198,6 +199,7 @@ class Moteur:
         self._stands(p, e)
         self._mecanique(p, e)
         self._pneus_immediat(p, e)
+        self._freins(e)
         self._position(p, e)
         self._ecart_derriere(e)
         self._temps_restant(e)
@@ -335,12 +337,33 @@ class Moteur:
                 self._dire(e, f"Crevaison {ROUES[i]} ! Rentre aux stands.", URGENT, "pneus")
             if not b.crevaison:
                 self.crevaisons.discard(i)
-        avant = max(e.pneus[0].frein, e.pneus[1].frein)
-        arriere = max(e.pneus[2].frein, e.pneus[3].frein)
-        if max(avant, arriere) > 1000 and e.vitesse > 50:
-            ou = "avant" if avant >= arriere else "arrière"
-            self._dire(e, f"Freins {ou} très chauds, {round(max(avant, arriere))} degrés.",
-                       NORMAL, "pneus", cle="freins", attente=60)
+
+    # Seuils carbone LMP2 / LMP3 (°C)
+    FREIN_FROID, FREIN_CHAUD = 300, 850
+
+    def _freins(self, e: Etat) -> None:
+        """Annonce l'état des freins avant / arrière : froids, bonne température, trop chauds."""
+        if not hasattr(self, "etat_freins"):
+            self.etat_freins, self.freins_cand = {}, {}
+        if e.vitesse < 50 or e.au_stand:
+            return
+        for nom, idx in (("avant", (0, 1)), ("arrière", (2, 3))):
+            temp = max(e.pneus[k].frein for k in idx)
+            etat = "froids" if temp < self.FREIN_FROID else "chauds" if temp > self.FREIN_CHAUD else "bons"
+            cand = self.freins_cand.get(nom)
+            if cand is None or cand[0] != etat:
+                self.freins_cand[nom] = (etat, e.t)
+                continue
+            # l'état doit tenir 3 s avant d'être annoncé
+            if etat != self.etat_freins.get(nom) and e.t - cand[1] >= 3:
+                ancien = self.etat_freins.get(nom)
+                self.etat_freins[nom] = etat
+                if ancien is None and etat == "bons":
+                    continue
+                txt = {"froids": f"Freins {nom} froids, {round(temp)} degrés, attention au freinage.",
+                       "bons": f"Freins {nom} à bonne température, {round(temp)} degrés.",
+                       "chauds": f"Freins {nom} trop chauds, {round(temp)} degrés, ménage-les."}[etat]
+                self._dire(e, txt, URGENT if etat != "bons" else INFO, "freins")
 
     def _meteo(self, p: Etat, e: Etat) -> None:
         if e.pluie >= 0.1 > p.pluie:

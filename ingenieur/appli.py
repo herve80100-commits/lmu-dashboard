@@ -32,6 +32,8 @@ def charger_config() -> dict:
     try:
         with open(CONFIG, encoding="utf-8") as f:
             base.update(json.load(f))
+        if "freins" not in base["categories"]:  # nouvelle catégorie : active par défaut
+            base["categories"].append("freins")
     except Exception:
         pass
     return base
