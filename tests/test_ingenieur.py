@@ -27,7 +27,7 @@ def test_demo_couvre_les_annonces():
                     "Position gagnée", "Position perdue", "Meilleur tour", "Consommation",
                     "Carburant bas", "Drapeau jaune", "Drapeau bleu", "Limites de piste",
                     "Pénalité !", "Pénalité purgée", "Limiteur", "Sortie des stands",
-                    "assez pour finir", "Freins avant trop chauds", "Freins avant à bonne température", "Pneus avant trop chauds", "Crevaison",
+                    "assez pour finir", "Freins avant trop chauds", "Freins avant froids, 220 degrés", "Freins avant à bonne température", "Pneus avant trop chauds", "Crevaison",
                     "Dernier tour", "Drapeau à damier", "pleuvoir", "moins d'une seconde"):
         assert attendu in textes, attendu
 

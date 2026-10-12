@@ -308,14 +308,25 @@ class Moteur:
             self._dire(e, "Limiteur ! Limiteur !", URGENT, "stands", cle="limiteur", attente=6, vie=3)
 
     def _froid(self, e: Etat) -> None:
-        pn = [x for x in e.pneus]
+        """Sortie des stands : état des pneus et des freins (avant / arrière)."""
+        pn = e.pneus
         opt = pn[0].optimal or 85.0
-        froids = sum(x.temp for x in pn) / 4 < min(opt - 30, 55)
-        freins = max(x.frein for x in pn) < 250
-        if froids or freins:
-            quoi = " et ".join(m for m, c in (("pneus", froids), ("freins", freins)) if c)
-            self._dire(e, f"Attention, {quoi} froids, vas-y doucement ce tour.", NORMAL, "pneus",
-                       cle="froid_sortie", attente=30)
+        if sum(x.temp for x in pn) / 4 < min(opt - 30, 55):
+            self._dire(e, f"Attention, pneus froids, {round(sum(x.temp for x in pn) / 4)} degrés, vas-y doucement ce tour.",
+                       NORMAL, "pneus", cle="froid_sortie", attente=30)
+        av = max(pn[0].frein, pn[1].frein)
+        ar = max(pn[2].frein, pn[3].frein)
+        froids = [n for n, t in (("avant", av), ("arrière", ar)) if t < self.FREIN_FROID]
+        if len(froids) == 2:
+            txt = f"Freins froids, {round(av)} degrés devant, {round(ar)} derrière, chauffe-les avant de freiner fort."
+        elif froids:
+            txt = f"Freins {froids[0]} froids, {round(av if froids[0] == 'avant' else ar)} degrés, chauffe-les."
+        else:
+            txt = f"Freins à bonne température, {round(av)} degrés devant, {round(ar)} derrière."
+        self._dire(e, txt, NORMAL, "freins", cle="freins_sortie", attente=30)
+        # repartir de zéro pour annoncer le passage à « bonne température » ensuite
+        self.etat_freins = {n: ("froids" if n in froids else "bons") for n in ("avant", "arrière")}
+        self.freins_cand = {}
 
     # ---------------------------------------------------------------- mécanique
     def _mecanique(self, p: Etat, e: Etat) -> None:

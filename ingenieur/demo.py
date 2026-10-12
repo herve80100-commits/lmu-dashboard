@@ -128,6 +128,8 @@ def etat(t: float) -> Etat:
     usure = 0.1 * (n + frac) if t >= DEPART else 0.0
     chaud = 104.0 if d5 <= t < FINS[4] else 86.0
     freins = 1060.0 if d5 + 15 <= t < d5 + 20 else 650.0
+    if d6 + 3 <= t < d6 + 26:  # freins avant refroidis pendant l'arrêt
+        freins = 220.0
     e.pneus = [
         Pneu(usure=usure, temp=chaud, optimal=85.0, pression=170, frein=freins),
         Pneu(usure=usure * 0.95, temp=chaud, optimal=85.0, pression=170, frein=freins),
