@@ -40,10 +40,12 @@ class Annonce:
 class Spotter:
     """Voiture à gauche / à droite / trois de front / dégagé."""
 
-    LONGUEUR = 8.5  # m : on prévient avant le chevauchement (voiture ~5 m + marge)
+    LONGUEUR = 5.5  # m : chevauchement (longueur d'une voiture + marge)
+    ANTICIPATION = 1.0  # s : on prévient 1 s avant que la voiture arrive à ta hauteur
+    PORTEE = 40.0  # m : distance max suivie
     LARGEUR_MAX = 5.5  # m : au-delà, la voiture n'est pas « à côté »
     LARGEUR_MIN = 0.8  # m : en dessous, c'est la même ligne (devant/derrière)
-    DELAI_DEGAGE = 1.2  # s sans voiture avant d'annoncer « dégagé »
+    DELAI_DEGAGE = 1.0  # s sans voiture avant d'annoncer « dégagé »
     TOUJOURS_LA = 6.0  # s de chevauchement avant « toujours là »
 
     def __init__(self) -> None:
@@ -51,6 +53,7 @@ class Spotter:
         self.vu_g = self.vu_d = -1e9  # dernier instant où une voiture était là
         self.depuis = 0.0
         self.rappel_fait = False
+        self.prec = {}  # id -> (t, lon) pour la vitesse relative
 
     @property
     def actif(self) -> bool:
@@ -62,8 +65,23 @@ class Spotter:
             self.vu_g = self.vu_d = -1e9
         else:
             g = d = False
-            for lat, lon in e.voisins:
-                if abs(lon) < self.LONGUEUR and self.LARGEUR_MIN < abs(lat) < self.LARGEUR_MAX:
+            prec, self.prec = self.prec, {}
+            for i, v in enumerate(e.voisins):
+                lat, lon = v[0], v[1]
+                vid = v[2] if len(v) > 2 else i
+                if abs(lon) > self.PORTEE or not (self.LARGEUR_MIN < abs(lat) < self.LARGEUR_MAX):
+                    continue
+                # vitesse de rapprochement (m/s) mesurée entre deux lectures
+                rapproche = 0.0
+                old = prec.get(vid)
+                if old and e.t - old[0] > 0.01 and e.t - old[0] < 1.0:
+                    dlon = (abs(old[1]) - abs(lon)) / (e.t - old[0])
+                    rapproche = dlon
+                    self.prec[vid] = old if e.t - old[0] < 0.15 else (e.t, lon)
+                else:
+                    self.prec[vid] = (e.t, lon)
+                marge = self.LONGUEUR + max(0.0, rapproche) * self.ANTICIPATION
+                if abs(lon) < marge:
                     if lat > 0:
                         g = True
                     else:

@@ -56,12 +56,12 @@ def _voisins(lacet, autre):
 
 def test_spotter_geometrie():
     # tout droit : avant = -z local ; +x local = gauche
-    (lat, lon), = _voisins(0.0, (2.5, 0, -1.0))
+    (lat, lon, _), = _voisins(0.0, (2.5, 0, -1.0))
     assert lat > 2 and abs(lon - 1.0) < 1e-9  # à gauche, 1 m devant
     # voiture tournée de 90° : la même voiture voisine doit rester à gauche
     lacet = math.pi / 2
     gauche_monde = (math.cos(lacet) * 2.5, 0, -math.sin(lacet) * 2.5)
-    (lat, lon), = _voisins(lacet, gauche_monde)
+    (lat, lon, _), = _voisins(lacet, gauche_monde)
     assert lat > 2 and abs(lon) < 1e-9
 
 

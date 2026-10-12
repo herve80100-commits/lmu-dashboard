@@ -183,5 +183,5 @@ class SourceLMU:
                 continue
             lat = dx * ax_x[0] + dy * ax_x[1] + dz * ax_x[2]
             lon = -(dx * ax_z[0] + dy * ax_z[1] + dz * ax_z[2])
-            out.append((-lat if self.inverser else lat, lon))
+            out.append((-lat if self.inverser else lat, lon, vid))
         return out
