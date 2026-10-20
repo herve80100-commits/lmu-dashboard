@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LMU Analyzer</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="stage">
+
+  <!-- ═════ BARRE HAUTE ═════ -->
+  <header class="top">
+    <div class="logo">LMU<span>·</span>ANALYZER</div>
+    <div class="live" id="live-pill"><i></i><span>LIVE</span></div>
+    <div class="sep"></div>
+    <div class="tb"><small>Circuit</small><b id="s-track">—</b></div>
+    <div class="tb"><small>Voiture</small><b id="s-vehicle">—</b></div>
+    <div class="tb"><small>Session</small><b id="s-session">—</b></div>
+    <div class="sep"></div>
+    <div class="tb"><small>Position</small><div class="pos"><span id="s-pos">—</span> <span class="pos-n" id="s-cars"></span></div></div>
+    <div class="tb"><small id="s-ahead-l">Devant</small><b class="mono" id="s-ahead">—</b></div>
+    <div class="tb"><small id="s-behind-l">Derrière</small><b class="mono" id="s-behind">—</b></div>
+    <div class="sep"></div>
+    <div class="tb"><small>Piste / Air</small><b id="s-weather">—</b></div>
+    <div class="grow"></div>
+    <div class="tb right"><small>Temps restant</small><b class="mono big" id="s-remaining">—</b></div>
+  </header>
+
+  <!-- ═════ CHRONO / SECTEURS / VOITURE ═════ -->
+  <section class="row hero">
+    <div class="card timing">
+      <div>
+        <div class="h">Tour en cours <span class="sub">vs meilleur tour</span></div>
+        <div class="lapnow mono" id="t-lap">—</div>
+        <div class="delta mono" id="t-delta">—</div>
+      </div>
+      <div class="grow"></div>
+      <div class="kv mono">
+        <span>Prédit</span><b id="t-pred">—</b>
+        <span>Dernier</span><b id="t-last">—</b>
+        <span>Meilleur</span><b id="t-best" class="purple">—</b>
+        <span>Théorique</span><b id="t-theo">—</b>
+      </div>
+    </div>
+
+    <div class="card sectors">
+      <div class="h" id="sec-title">Secteurs <span class="sub">en attente d'un tour complet</span></div>
+      <div class="stiles" id="sec-tiles"></div>
+      <div class="slegend"><span><i class="dot" style="background:var(--purple)"></i>Meilleur de la session</span><span><i class="dot" style="background:var(--pb)"></i>Record perso</span><span><i class="dot" style="background:var(--slow)"></i>Plus lent</span></div>
+    </div>
+
+    <div class="card livecar">
+      <div class="gear"><small>RAPPORT</small><b class="mono" id="c-gear">—</b></div>
+      <div class="grow">
+        <div class="speedrow"><span class="speed mono" id="c-speed">—</span><span class="unit">km/h</span><div class="grow"></div><span class="mono rpmtxt" id="c-rpm"></span></div>
+        <div class="rpm" id="c-rpmbar"></div>
+        <div class="pedal"><span>Gaz</span><div class="bar"><i id="c-thr" style="background:var(--traction)"></i></div><b class="mono" id="c-thr-v">0%</b></div>
+        <div class="pedal"><span>Frein</span><div class="bar"><i id="c-brk" style="background:var(--brake)"></i></div><b class="mono" id="c-brk-v">0%</b></div>
+        <div class="chips" id="c-chips"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═════ CARTE / GRAPHIQUES / POINTS FORTS & FAIBLES ═════ -->
+  <section class="row main">
+    <div class="card map">
+      <div class="h">Carte du circuit <span class="sub" id="map-sub">gain / perte par virage</span></div>
+      <svg id="map" width="566" height="372" viewBox="0 0 566 372"></svg>
+      <div class="legend map-legend">
+        <span><i class="sw2" style="background:var(--gain2)"></i>Gain fort</span>
+        <span><i class="sw2" style="background:var(--gain1)"></i>Gain léger</span>
+        <span><i class="sw2" style="background:var(--neutral)"></i>Neutre</span>
+        <span><i class="sw2" style="background:var(--loss1)"></i>Perte légère</span>
+        <span><i class="sw2" style="background:var(--loss2)"></i>Perte forte</span>
+      </div>
+    </div>
+
+    <div class="mid">
+      <div class="card deltacard">
+        <div class="h spread"><span class="hl">Delta cumulé <span class="sub" id="delta-sub">dernier tour vs meilleur · sur la distance</span></span><span class="mono total" id="delta-total"></span></div>
+        <svg id="delta" width="656" height="166" viewBox="0 0 656 166"></svg>
+      </div>
+      <div class="card focuscard">
+        <div class="h"><span class="hl">Freinage &amp; accélération <span class="sub" id="focus-sub">virage le plus coûteux</span></span></div>
+        <div class="legend focus-legend">
+          <span><i class="sw2" style="background:var(--brake)"></i>Frein dernier tour</span>
+          <span><i class="sw2 dash" style="--c:var(--brake)"></i>Frein meilleur</span>
+          <span><i class="sw2" style="background:var(--traction)"></i>Gaz dernier tour</span>
+          <span><i class="sw2 dash" style="--c:var(--traction)"></i>Gaz meilleur</span>
+        </div>
+        <svg id="focus" width="656" height="188" viewBox="0 0 656 188"></svg>
+      </div>
+    </div>
+
+    <div class="sw">
+      <div class="card list">
+        <div class="h spread"><span class="hl bad">▲ Points faibles</span><span class="sub">temps perdu au tour</span></div>
+        <div id="weak"></div>
+      </div>
+      <div class="card list">
+        <div class="h spread"><span class="hl good">✓ Points forts</span><span class="sub">temps gagné au tour</span></div>
+        <div id="strong"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═════ SECTEURS D'ANALYSE ═════ -->
+  <section class="row sections">
+    <div class="card sc" data-section="brake" style="--c:var(--brake)"></div>
+    <div class="card sc" data-section="traction" style="--c:var(--traction)"></div>
+    <div class="card sc" data-section="corner" style="--c:var(--corner)"></div>
+    <div class="card sc" data-section="tyres" style="--c:var(--tyre)"></div>
+    <div class="card sc" data-section="energy" style="--c:var(--energy)"></div>
+    <div class="card sc" data-section="consistency" style="--c:var(--consist)"></div>
+  </section>
+
+  <footer class="foot"><span id="f-status"><b class="off">●</b> Connexion au serveur…</span><span id="f-right"></span></footer>
+
+  <div class="overlay" id="overlay">
+    <div class="ov-card">
+      <div class="logo">LMU<span>·</span>ANALYZER</div>
+      <p id="ov-text">En attente de Le Mans Ultimate…</p>
+      <small>Lance une session dans le jeu : le dashboard se remplit automatiquement.</small>
+    </div>
+  </div>
+</div>
+<script src="app.js"></script>
+</body>
+</html>
