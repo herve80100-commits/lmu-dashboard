@@ -21,7 +21,7 @@ Dashboard d'analyse **en temps réel** pour **Le Mans Ultimate** : il lit la té
 
 ## Utilisation
 
-- Double-clique **`lancer.bat`** (ou `python run.py`), puis ouvre **http://localhost:8080**.
+- Double-clique **`lancer.bat`** (ou `python run.py`) : le serveur démarre et le dashboard s'ouvre tout seul dans ton navigateur (**http://localhost:8080**).
 - Lance une session dans le jeu et monte dans la voiture : le dashboard se remplit tout seul.
 - La fenêtre de `lancer.bat` affiche l'état de la connexion (lignes `[télémétrie] …`), que l'écran d'attente du dashboard reprend aussi. Envoie cette ligne si le dashboard ne se remplit pas.
 - Sur une tablette ou un second écran du même réseau, ouvre l'adresse affichée dans la fenêtre (`http://IP-du-PC:8080`).
@@ -39,6 +39,7 @@ Double-clique **`demo.bat`** (ou `python run.py --demo`) : une télémétrie sim
 | `--port 8080` | Port HTTP |
 | `--hz 50` | Fréquence de lecture de la télémétrie |
 | `--host 127.0.0.1` | N'accepter que ce PC (par défaut, tout le réseau local) |
+| `--no-browser` | Ne pas ouvrir le navigateur au lancement |
 | `?flip=x` ou `?flip=y` dans l'URL | Retourner la carte si elle apparaît en miroir |
 
 ## Fonctionnement

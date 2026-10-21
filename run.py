@@ -6,6 +6,8 @@
 import argparse
 import socket
 import sys
+import threading
+import webbrowser
 
 from lmu_dashboard.server import Engine, serve
 
@@ -26,6 +28,7 @@ def main() -> int:
     p.add_argument("--port", type=int, default=8080, help="port HTTP (défaut 8080)")
     p.add_argument("--host", default="0.0.0.0", help="adresse d'écoute (défaut : tout le réseau local)")
     p.add_argument("--hz", type=float, default=50.0, help="fréquence de lecture de la télémétrie (défaut 50)")
+    p.add_argument("--no-browser", action="store_true", help="ne pas ouvrir le dashboard dans le navigateur")
     args = p.parse_args()
 
     if args.demo:
@@ -45,6 +48,8 @@ def main() -> int:
         source.warmup(engine.analyzer, laps=3)
     httpd = serve(engine, args.host, args.port)
     print(f"LMU Analyzer prêt → http://localhost:{args.port}  (tablette / autre écran : http://{local_ip()}:{args.port})")
+    if not args.no_browser:
+        threading.Timer(1.0, webbrowser.open, (f"http://localhost:{args.port}",)).start()
     if not args.demo:
         print("En attente de Le Mans Ultimate… (lance une session, le dashboard se met à jour tout seul)")
     try:
