@@ -239,6 +239,7 @@ class Analyzer:
         self.tyre_laps = 0
         self.pitstops = None
         self.last: Optional[Sample] = None
+        self.last_tyres: Optional[List[Dict]] = None
         self.ev = self._new_events()
 
     @staticmethod
@@ -495,11 +496,16 @@ class Analyzer:
         last_lap = self.laps[-1] if self.laps else None
         theoretical = sum(self.best_sectors) if all(self.best_sectors) else None
 
-        wheels = []
-        for name, w in zip(("AVG", "AVD", "ARG", "ARD"), s.wheels):
-            state = "cold" if w.temp_c < 70 else "hot" if w.temp_c > 105 else "ok"
-            wheels.append({"pos": name, "temp": round(w.temp_c), "pressure": round(w.pressure_bar, 2),
-                           "wear": round(w.wear_pct, 1), "state": state})
+        stale = False
+        if all(w.valid for w in s.wheels):
+            wheels = []
+            for name, w in zip(("AVG", "AVD", "ARG", "ARD"), s.wheels):
+                state = "cold" if w.temp_c < 70 else "hot" if w.temp_c > 105 else "ok"
+                wheels.append({"pos": name, "temp": round(w.temp_c), "pressure": round(w.pressure_bar, 2),
+                               "wear": round(w.wear_pct, 1), "state": state})
+            self.last_tyres = wheels
+        else:  # pas de mesure en ce moment : on garde la dernière mesure en piste
+            wheels, stale = self.last_tyres, True
         per_lap = _mean(self.fuel_used, None) if self.fuel_used else None
         res = self._resource(s)
         laps_left = res / per_lap if per_lap else None
@@ -555,7 +561,7 @@ class Analyzer:
                 "brake": analysis["brake"] if analysis else None,
                 "traction": analysis["traction"] if analysis else None,
                 "corner": analysis["corner"] if analysis else None,
-                "tyres": {"compound": s.compound, "laps": self.tyre_laps, "wheels": wheels},
+                "tyres": {"compound": s.compound, "laps": self.tyre_laps, "wheels": wheels, "stale": stale},
                 "energy": {"kind": "virtual" if s.virtual_energy else "fuel",
                            "pct": round(s.virtual_energy) if s.virtual_energy else (round(s.fuel / s.fuel_capacity * 100) if s.fuel_capacity else None),
                            "fuel": round(s.fuel, 1), "per_lap": round(per_lap, 2) if per_lap else None,

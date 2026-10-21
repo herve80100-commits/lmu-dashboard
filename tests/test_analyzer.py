@@ -135,6 +135,35 @@ class SharedMemoryParseTest(unittest.TestCase):
         self.assertTrue(s.lap_invalid)
         self.assertAlmostEqual(s.speed, 50.0)
 
+    def test_tyres_without_data_keep_last_track_measure(self):
+        a = Analyzer()
+        s = lap_samples(0, 50.0, 0.0)[0][0]
+        for w in s.wheels:
+            w.temp_c, w.pressure_bar = 90.0, 1.8
+        a.update(s)
+        self.assertEqual(a.snapshot()["sections"]["tyres"]["wheels"][0]["temp"], 90)
+        pit = lap_samples(0, 50.0, 0.0)[0][1]
+        for w in pit.wheels:
+            w.temp_c, w.pressure_bar, w.valid = -273.15, 0.0, False
+        a.update(pit)
+        tyres = a.snapshot()["sections"]["tyres"]
+        self.assertTrue(tyres["stale"])
+        self.assertEqual(tyres["wheels"][0]["temp"], 90)
+        fresh = Analyzer()
+        fresh.update(pit)
+        self.assertIsNone(fresh.snapshot()["sections"]["tyres"]["wheels"])
+
+    def test_lmu_zero_tyre_data_is_flagged_invalid(self):
+        data = lmu.LMUObjectOut()
+        data.scoring.scoringInfo.mNumVehicles, data.scoring.scoringInfo.mLapDist = 1, 6019.0
+        me = data.scoring.vehScoringInfo[0]
+        me.mID, me.mIsPlayer = 4, True
+        data.telemetry.activeVehicles, data.telemetry.playerHasVehicle = 1, True
+        data.telemetry.telemInfo[0].mID = 4
+        data.telemetry.telemInfo[0].mWheels[0].mWear = 1.0
+        s = parse_lmu(lmu.LMUObjectOut.from_buffer_copy(bytes(data)))
+        self.assertFalse(any(w.valid for w in s.wheels))
+
     def test_lmu_without_player_vehicle_returns_none(self):
         self.assertIsNone(parse_lmu(lmu.LMUObjectOut()))
 

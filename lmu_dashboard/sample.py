@@ -10,6 +10,7 @@ class WheelSample:
     pressure_bar: float = 0.0
     wear_pct: float = 0.0  # usure consommée, 0 = neuf
     slip: float = 0.0  # glissement longitudinal (négatif = blocage, positif = patinage)
+    valid: bool = True  # False quand le jeu ne publie pas les données pneus (stand, garage)
 
 
 @dataclass

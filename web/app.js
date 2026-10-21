@@ -360,11 +360,17 @@
   }
 
   function renderTyres(card, t) {
+    if (!t.wheels) {
+      const tiles = ['AVG', 'AVD', 'ARG', 'ARD'].map((p) => `<div class="ty">${p}<b>—</b>&nbsp;<div class="w"><i style="width:0"></i></div></div>`).join('');
+      card.innerHTML = head('tyres', `<div class="aside mono">${esc(t.compound || '—')} · ${t.laps} tours</div>`) + `<div class="tyres">${tiles}</div><div class="bottom" style="margin-top:8px">Mesures disponibles une fois en piste</div>`;
+      return;
+    }
     const tiles = t.wheels.map((w) => `<div class="ty">${w.pos}<b class="${w.state === 'ok' ? '' : w.state}">${w.temp} °C</b>${w.pressure.toFixed(2)} bar · ${w.wear.toFixed(0)} %<div class="w"><i style="width:${Math.max(0, 100 - w.wear)}%"></i></div></div>`).join('');
     const hot = t.wheels.filter((w) => w.state === 'hot').map((w) => w.pos);
     const cold = t.wheels.filter((w) => w.state === 'cold').map((w) => w.pos);
     const b = hot.length ? badge('warn', `● ${hot.join(', ')} chaud`) : cold.length ? badge('warn', `● ${cold.join(', ')} froid`) : badge('good', '✓ Fenêtre idéale');
-    card.innerHTML = head('tyres', `<div class="aside mono">${esc(t.compound || '—')} · ${t.laps} tours</div>`) + `<div class="tyres">${tiles}</div><div class="bottom" style="margin-top:8px">${b} <span>usure en %</span></div>`;
+    const note = t.stale ? 'dernière mesure en piste' : 'usure en %';
+    card.innerHTML = head('tyres', `<div class="aside mono">${esc(t.compound || '—')} · ${t.laps} tours</div>`) + `<div class="tyres">${tiles}</div><div class="bottom" style="margin-top:8px">${b} <span>${note}</span></div>`;
   }
 
   function renderEnergy(card, e, lap) {

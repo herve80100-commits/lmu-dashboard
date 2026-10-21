@@ -110,6 +110,8 @@ def build_sample(info, vehicles, player, tel) -> Sample:
             pressure_bar=w.mPressure / 100.0,
             wear_pct=max(0.0, (1.0 - w.mWear) * 100),
             slip=slip,
+            # LMU met température et pression à 0 tant que la voiture est au stand ou au garage
+            valid=min(w.mTemperature) > 200 and w.mPressure > 10,
         ))
     s.wheels = wheels
 
