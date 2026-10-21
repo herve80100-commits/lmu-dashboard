@@ -263,7 +263,7 @@ class Analyzer:
             self.waiting_line = False
         if not self.waiting_line:
             self.cur.add(s)
-        if s.in_pits:
+        if s.in_pits or s.lap_invalid:
             self.cur_valid = False
         self._events(s)
         self.last = s
@@ -273,8 +273,13 @@ class Analyzer:
         self.cur_lap = s.laps_completed
         self.cur_valid = not s.in_pits
         self.waiting_line = s.lap_dist > 0.5 * self.track_length
-        self.lap_start_fuel = s.fuel
+        self.lap_start_fuel = self._resource(s)
         self.ev = self._new_events()
+
+    @staticmethod
+    def _resource(s: Sample) -> float:
+        """Ressource suivie au tour : énergie virtuelle LMU (%) si disponible, sinon carburant (L)."""
+        return s.virtual_energy if s.virtual_energy else s.fuel
 
     def _events(self, s: Sample) -> None:
         ev = self.ev
@@ -300,8 +305,9 @@ class Analyzer:
         sectors = None
         if s.last_lap > 0 and 0 < s.last_s1 < s.last_s2 < s.last_lap:
             sectors = (s.last_s1, s.last_s2 - s.last_s1, s.last_lap - s.last_s2)
-        if self.lap_start_fuel is not None and 0 < self.lap_start_fuel - s.fuel < 0.5 * max(s.fuel_capacity, 1):
-            self.fuel_used = (self.fuel_used + [self.lap_start_fuel - s.fuel])[-5:]
+        res, cap = self._resource(s), (100.0 if s.virtual_energy else s.fuel_capacity)
+        if self.lap_start_fuel is not None and 0 < self.lap_start_fuel - res < 0.5 * max(cap, 1):
+            self.fuel_used = (self.fuel_used + [self.lap_start_fuel - res])[-5:]
         self.tyre_laps += 1
 
         entry = {"lap": lap_no, "time": lap_time, "valid": valid, "sectors": sectors, "status": None, "deltas": None,
@@ -495,7 +501,8 @@ class Analyzer:
             wheels.append({"pos": name, "temp": round(w.temp_c), "pressure": round(w.pressure_bar, 2),
                            "wear": round(w.wear_pct, 1), "state": state})
         per_lap = _mean(self.fuel_used, None) if self.fuel_used else None
-        laps_left = s.fuel / per_lap if per_lap else None
+        res = self._resource(s)
+        laps_left = res / per_lap if per_lap else None
 
         times = [l["time"] for l in valid_laps[-10:]]
         consistency = None
@@ -531,6 +538,7 @@ class Analyzer:
                 "speed": round(s.speed * 3.6), "gear": s.gear, "rpm": round(s.rpm), "max_rpm": round(s.max_rpm),
                 "throttle": round(s.throttle * 100), "brake": round(s.brake * 100),
                 "brake_bias": round(s.brake_bias_front, 1) if s.brake_bias_front else None,
+                "tc": s.tc, "abs": s.abs, "motor_map": s.motor_map,
                 "in_pits": s.in_pits, "sector": s.sector,
             },
             "sectors": {"lap": last_lap["lap"], "times": last_lap["sectors"], "status": last_lap["status"],
@@ -548,7 +556,8 @@ class Analyzer:
                 "traction": analysis["traction"] if analysis else None,
                 "corner": analysis["corner"] if analysis else None,
                 "tyres": {"compound": s.compound, "laps": self.tyre_laps, "wheels": wheels},
-                "energy": {"pct": round(s.fuel / s.fuel_capacity * 100) if s.fuel_capacity else None,
+                "energy": {"kind": "virtual" if s.virtual_energy else "fuel",
+                           "pct": round(s.virtual_energy) if s.virtual_energy else (round(s.fuel / s.fuel_capacity * 100) if s.fuel_capacity else None),
                            "fuel": round(s.fuel, 1), "per_lap": round(per_lap, 2) if per_lap else None,
                            "laps_left": round(laps_left, 1) if laps_left else None,
                            "pit_lap": s.laps_completed + 1 + int(laps_left) if laps_left else None},

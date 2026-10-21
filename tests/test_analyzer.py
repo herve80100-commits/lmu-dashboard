@@ -6,7 +6,8 @@ from lmu_dashboard import rf2_structs as rf2
 from lmu_dashboard.analyzer import Analyzer
 from lmu_dashboard.demo import CORNERS, DemoSource
 from lmu_dashboard.sample import Sample
-from lmu_dashboard.shared_memory import parse
+from lmu_dashboard.shared_memory import parse, parse_lmu
+from lmu_dashboard.vendor.pyLMUSharedMemory import lmu_data as lmu
 
 TRACK = 2000.0
 
@@ -112,6 +113,30 @@ class SharedMemoryParseTest(unittest.TestCase):
         self.assertAlmostEqual(s.wheels[0].pressure_bar, 1.8)
         self.assertAlmostEqual(s.wheels[0].wear_pct, 10.0)
         self.assertEqual(s.session_best_sectors, (50.0, 76.0, 79.0))
+
+    def test_lmu_native_memory_is_converted(self):
+        data = lmu.LMUObjectOut()
+        info = data.scoring.scoringInfo
+        info.mTrackName, info.mLapDist, info.mNumVehicles, info.mSessionTimeRemaining = b"Sebring", 6019.0, 2, 1800.0
+        rival, me = data.scoring.vehScoringInfo[0], data.scoring.vehScoringInfo[1]
+        rival.mID, rival.mPlace = 3, 1
+        me.mID, me.mPlace, me.mIsPlayer, me.mTotalLaps, me.mLapDist = 9, 2, True, 1, 500.0
+        me.mDriverName, me.mVehicleClass = b"H Dhenin", b"LMP2"
+        tel = data.telemetry
+        tel.activeVehicles, tel.playerVehicleIdx, tel.playerHasVehicle = 2, 1, True
+        t = tel.telemInfo[1]
+        t.mID, t.mGear, t.mTC, t.mTCMax, t.mVirtualEnergy, t.mLapInvalidated = 9, 3, 4, 11, 0.62, True
+        t.mLocalVel.z = -50.0
+        s = parse_lmu(lmu.LMUObjectOut.from_buffer_copy(bytes(data)))
+        self.assertIsNotNone(s)
+        self.assertEqual((s.track, s.driver, s.vehicle_class, s.gear, s.tc), ("Sebring", "H Dhenin", "LMP2", 3, 4))
+        self.assertAlmostEqual(s.virtual_energy, 62.0, places=3)
+        self.assertEqual(s.time_remaining, 1800.0)
+        self.assertTrue(s.lap_invalid)
+        self.assertAlmostEqual(s.speed, 50.0)
+
+    def test_lmu_without_player_vehicle_returns_none(self):
+        self.assertIsNone(parse_lmu(lmu.LMUObjectOut()))
 
     def test_no_player_returns_none(self):
         self.assertIsNone(parse(bytes(rf2.ScoringBuffer()), bytes(rf2.TelemetryBuffer())))

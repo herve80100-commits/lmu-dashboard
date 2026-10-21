@@ -17,14 +17,13 @@ Dashboard d'analyse **en temps réel** pour **Le Mans Ultimate** : il lit la té
 
 1. Installe **Python 3.9 ou plus récent** depuis [python.org](https://www.python.org/downloads/) et coche « Add Python to PATH ». Aucune autre dépendance n'est nécessaire.
 2. Télécharge ce dépôt (bouton **Code → Download ZIP**) et décompresse-le.
-3. Active la **mémoire partagée** dans Le Mans Ultimate :
-   - Vérifie que `rFactor2SharedMemoryMapPlugin64.dll` est dans le dossier `Le Mans Ultimate\Plugins\`. Sinon, télécharge-le depuis [rF2SharedMemoryMapPlugin](https://github.com/TheIronWolfModding/rF2SharedMemoryMapPlugin/releases) et copie-le dans ce dossier.
-   - Lance le jeu une fois, quitte-le, puis ouvre `Le Mans Ultimate\UserData\player\CustomPluginVariables.JSON` et mets `" Enabled": 1` dans le bloc `rFactor2SharedMemoryMapPlugin64.dll`.
+3. Côté jeu, **rien à installer** avec LMU 1.2 ou plus récent : le dashboard lit la mémoire partagée intégrée au jeu (`LMU_Data`). Pour une version plus ancienne, voir « Anciennes versions de LMU » plus bas.
 
 ## Utilisation
 
 - Double-clique **`lancer.bat`** (ou `python run.py`), puis ouvre **http://localhost:8080**.
-- Lance une session dans le jeu : le dashboard se remplit tout seul.
+- Lance une session dans le jeu et monte dans la voiture : le dashboard se remplit tout seul.
+- La fenêtre de `lancer.bat` affiche l'état de la connexion (lignes `[télémétrie] …`), que l'écran d'attente du dashboard reprend aussi. Envoie cette ligne si le dashboard ne se remplit pas.
 - Sur une tablette ou un second écran du même réseau, ouvre l'adresse affichée dans la fenêtre (`http://IP-du-PC:8080`).
 
 L'analyse démarre après **un tour complet** (il devient la référence) **et un deuxième tour** (comparé à la référence). Chaque nouveau meilleur tour remplace automatiquement la référence.
@@ -45,13 +44,13 @@ Double-clique **`demo.bat`** (ou `python run.py --demo`) : une télémétrie sim
 ## Fonctionnement
 
 ```
-Le Mans Ultimate ──(mémoire partagée rF2, 50 Hz)──▶ run.py ──(flux SSE, 10 Hz)──▶ navigateur (web/)
+Le Mans Ultimate ──(mémoire partagée LMU_Data, 50 Hz)──▶ run.py ──(flux SSE, 10 Hz)──▶ navigateur (web/)
                                                     │
                                                     └─ lmu_dashboard/analyzer.py : tours découpés tous les 10 m,
                                                        delta, détection des virages, diagnostic, notes /100
 ```
 
-- `lmu_dashboard/rf2_structs.py`, `shared_memory.py` : lecture des buffers `$rFactor2SMMP_Telemetry$` et `$rFactor2SMMP_Scoring$`.
+- `lmu_dashboard/shared_memory.py` : lecture de `LMU_Data` (structures de [pyLMUSharedMemory](https://github.com/TinyPedal/pyLMUSharedMemory), licence MIT, copiées dans `lmu_dashboard/vendor/`), et à défaut des buffers du plugin rFactor 2 (`rf2_structs.py`).
 - `lmu_dashboard/analyzer.py` : moteur d'analyse, indépendant de la source.
 - `lmu_dashboard/demo.py` : simulateur pour le mode démo.
 - `lmu_dashboard/server.py` : serveur HTTP local (`/` = dashboard, `/stream` = temps réel, `/api/state` = JSON).
@@ -64,13 +63,16 @@ Le Mans Ultimate ──(mémoire partagée rF2, 50 Hz)──▶ run.py ──(fl
 - **Accélération** : distance de remise des gaz, patinage des roues arrière, coupures de l'antipatinage, temps passé plein gaz.
 - **Vitesse en courbe** : vitesse minimale dans chaque virage par rapport à la référence.
 - **Pneus** : température, pression et usure de chaque roue. La fenêtre « idéale » va de 70 à 105 °C.
-- **Énergie** : carburant restant, consommation moyenne, tours restants, tour d'arrêt conseillé.
+- **Énergie** : énergie virtuelle restante (ou carburant si la voiture n'en a pas), consommation moyenne, tours restants, tour d'arrêt conseillé.
 - **Régularité** : écart-type de tes 10 derniers tours valides.
+
+### Anciennes versions de LMU (avant 1.2)
+
+Copie `rFactor2SharedMemoryMapPlugin64.dll` ([téléchargement](https://github.com/TheIronWolfModding/rF2SharedMemoryMapPlugin/releases)) dans `Le Mans Ultimate\Plugins\`, lance le jeu une fois, puis mets `" Enabled": 1` dans le bloc de ce plugin, dans `UserData\player\CustomPluginVariables.JSON`. Le dashboard l'utilise automatiquement quand `LMU_Data` est absente. Dans ce mode, l'énergie virtuelle n'est pas disponible : le bloc Énergie utilise le carburant.
 
 ### Limites connues
 
-- La mémoire partagée rFactor 2 n'expose pas l'« énergie virtuelle » propre à LMU : le bloc Énergie utilise le carburant.
-- Les tours passés en partie aux stands ne servent ni de référence ni de comparaison.
+- Les tours passés en partie aux stands, ou invalidés par le jeu, ne servent ni de référence ni de comparaison.
 
 ## Tests
 

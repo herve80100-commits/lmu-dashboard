@@ -41,7 +41,7 @@ class Engine:
             if start - last_pub >= self.publish_every:
                 last_pub = start
                 snap = self.analyzer.snapshot(self.source.name) if sample is not None \
-                    else {"connected": False, "source": self.source.name}
+                    else {"connected": False, "source": self.source.name, "status": getattr(self.source, "status", None)}
                 snap["hz"] = self.hz
                 data = json.dumps(snap, separators=(",", ":"))
                 with self.cond:

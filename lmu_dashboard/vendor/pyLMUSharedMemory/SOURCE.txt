@@ -1,0 +1,2 @@
+Copie de https://github.com/TinyPedal/pyLMUSharedMemory (commit 6a8dd83, licence MIT).
+Ne pas modifier : mettre à jour depuis le dépôt d’origine si LMU change sa mémoire partagée.

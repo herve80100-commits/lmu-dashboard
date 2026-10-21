@@ -54,6 +54,11 @@ class Sample:
     fuel: float = 0.0
     fuel_capacity: float = 0.0
     compound: str = ""
+    tc: Optional[int] = None  # réglages LMU (None si indisponibles)
+    abs: Optional[int] = None
+    motor_map: Optional[int] = None
+    virtual_energy: Optional[float] = None  # % d'énergie virtuelle restante (LMU)
+    lap_invalid: bool = False
     wheels: List[WheelSample] = field(default_factory=lambda: [WheelSample() for _ in range(4)])
 
     # Course

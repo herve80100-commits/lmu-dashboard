@@ -141,13 +141,15 @@
     $('c-brk').style.width = `${l.brake}%`;
     setText('c-thr-v', `${l.throttle}%`);
     setText('c-brk-v', `${l.brake}%`);
-    const t = d.sections.tyres, e = d.sections.energy;
+    const e = d.sections.energy;
     const chips = [
+      num(l.tc) ? ['TC', l.tc] : null,
+      num(l.abs) ? ['ABS', l.abs] : null,
       l.brake_bias ? ['Répartition', `${l.brake_bias.toFixed(1)}%`] : null,
+      num(l.motor_map) ? ['Moteur', `Map ${l.motor_map}`] : null,
       ['Secteur', `S${l.sector}`],
-      ['Pneus', `${t.laps} tours`],
-      l.in_pits ? ['Stand', 'oui'] : (num(e.fuel) ? ['Carburant', `${e.fuel.toFixed(1)} L`] : null),
-    ].filter(Boolean);
+      l.in_pits ? ['Stand', 'oui'] : (num(e.fuel) && e.kind !== 'virtual' ? ['Carburant', `${e.fuel.toFixed(1)} L`] : null),
+    ].filter(Boolean).slice(0, 4);
     $('c-chips').innerHTML = chips.map(([k, v]) => `<span class="chip">${k} <b>${esc(v)}</b></span>`).join('');
   }
 
@@ -374,8 +376,8 @@
     card.innerHTML = head('energy', `<div class="score mono">${pct ?? '—'}<small>%</small></div>`)
       + `<div class="sbar fat"><i style="width:${pct ?? 0}%"></i></div>`
       + metrics([
-        ['Carburant', num(e.fuel) ? `${e.fuel.toFixed(1)} L` : '—'],
-        ['Conso. / tour', num(e.per_lap) ? `${e.per_lap.toFixed(2)} L` : '—'],
+        e.kind === 'virtual' ? ['Énergie virtuelle', `${pct ?? '—'} %`] : ['Carburant', num(e.fuel) ? `${e.fuel.toFixed(1)} L` : '—'],
+        ['Conso. / tour', num(e.per_lap) ? `${e.per_lap.toFixed(2)} ${e.kind === 'virtual' ? '%' : 'L'}` : '—'],
         ['Tours restants', num(e.laps_left) ? e.laps_left.toFixed(1) : '—'],
         ['Arrêt prévu', num(e.pit_lap) ? `Tour ${e.pit_lap}` : '—'],
       ]) + `<div class="bottom">${b}</div>`;
@@ -422,6 +424,7 @@
     if (!d || !d.connected) {
       $('overlay').classList.add('show');
       setText('ov-text', d ? 'En attente de Le Mans Ultimate…' : 'Connexion au serveur…');
+      setText('ov-status', d && d.status ? `État : ${d.status}` : 'Lance une session dans le jeu : le dashboard se remplit automatiquement.');
       pill.className = 'live off';
       $('f-status').innerHTML = `<b class="off">●</b> ${d ? 'Jeu non détecté · lance une session dans Le Mans Ultimate' : 'Serveur injoignable'}`;
       return;
