@@ -240,6 +240,8 @@ class Analyzer:
         self.pitstops = None
         self.last: Optional[Sample] = None
         self.last_tyres: Optional[List[Dict]] = None
+        self.pending: Optional[Dict] = None  # tour terminé, en attente du temps officiel du jeu
+        self.prev_last_lap = 0.0
         self.ev = self._new_events()
 
     @staticmethod
@@ -258,8 +260,13 @@ class Analyzer:
         self.pitstops = s.pitstops
         if self.cur_lap is None or s.laps_completed != self.cur_lap:
             if self.cur is not None and s.laps_completed == self.cur_lap + 1:
-                self._complete(s)
+                self._close_lap(s)
             self._start_lap(s)
+        # Le jeu publie le temps et les secteurs du tour un peu après le passage de la ligne :
+        # on attend qu'ils changent (5 s au plus) avant de clore l'analyse du tour.
+        if self.pending is not None and (s.last_lap != self.pending["stale_last"] or s.lap_time > 5.0):
+            self._complete(self.pending, s)
+            self.pending = None
         if self.waiting_line and s.lap_dist < 0.5 * self.track_length:
             self.waiting_line = False
         if not self.waiting_line:
@@ -267,6 +274,7 @@ class Analyzer:
         if s.in_pits or s.lap_invalid:
             self.cur_valid = False
         self._events(s)
+        self.prev_last_lap = s.last_lap
         self.last = s
 
     def _start_lap(self, s: Sample) -> None:
@@ -299,20 +307,31 @@ class Analyzer:
             ev["full"] += dt
         ev["total"] += dt
 
-    def _complete(self, s: Sample) -> None:
-        trace, lap_no = self.cur, self.cur_lap + 1
-        lap_time = s.last_lap if s.last_lap > 0 else max((t for t in trace.t if _ok(t)), default=0.0)
-        valid = self.cur_valid and trace.coverage() >= 0.95 and lap_time > 0
-        sectors = None
-        if s.last_lap > 0 and 0 < s.last_s1 < s.last_s2 < s.last_lap:
-            sectors = (s.last_s1, s.last_s2 - s.last_s1, s.last_lap - s.last_s2)
-        res, cap = self._resource(s), (100.0 if s.virtual_energy else s.fuel_capacity)
-        if self.lap_start_fuel is not None and 0 < self.lap_start_fuel - res < 0.5 * max(cap, 1):
-            self.fuel_used = (self.fuel_used + [self.lap_start_fuel - res])[-5:]
+    def _close_lap(self, s: Sample) -> None:
+        """Mémorise le tour qui vient de se terminer, en attendant son temps officiel."""
+        self.pending = {
+            "trace": self.cur, "lap_no": self.cur_lap + 1, "valid": self.cur_valid,
+            "events": {k: v for k, v in self.ev.items() if not k.startswith("_")},
+            "fuel_used": self.lap_start_fuel - self._resource(s) if self.lap_start_fuel is not None else None,
+            "capacity": 100.0 if s.virtual_energy else s.fuel_capacity,
+            "stale_last": self.prev_last_lap,
+        }
         self.tyre_laps += 1
 
+    def _complete(self, p: Dict, s: Sample) -> None:
+        trace, lap_no = p["trace"], p["lap_no"]
+        official = s.last_lap > 0 and s.last_lap != p["stale_last"]
+        lap_time = s.last_lap if official else max((t for t in trace.t if _ok(t)), default=0.0)
+        valid = p["valid"] and trace.coverage() >= 0.95 and lap_time > 0
+        sectors = None
+        if official and 0 < s.last_s1 < s.last_s2 < s.last_lap:
+            sectors = (s.last_s1, s.last_s2 - s.last_s1, s.last_lap - s.last_s2)
+        used = p["fuel_used"]
+        if valid and used is not None and 0 < used < 0.5 * max(p["capacity"], 1):
+            self.fuel_used = (self.fuel_used + [used])[-5:]
+
         entry = {"lap": lap_no, "time": lap_time, "valid": valid, "sectors": sectors, "status": None, "deltas": None,
-                 "events": {k: v for k, v in self.ev.items() if not k.startswith("_")}}
+                 "events": p["events"]}
         if sectors:
             status = []
             for k in range(3):
@@ -494,15 +513,21 @@ class Analyzer:
             delta = round(self.cur.t[b] - self.ref.t[b], 3)
         valid_laps = [l for l in self.laps if l["valid"]]
         last_lap = self.laps[-1] if self.laps else None
+        sector_lap = next((l for l in reversed(self.laps) if l["sectors"]), None)
         theoretical = sum(self.best_sectors) if all(self.best_sectors) else None
+        if theoretical is not None and self.ref_time is not None:
+            theoretical = min(theoretical, self.ref_time)
 
         stale = False
         if all(w.valid for w in s.wheels):
             wheels = []
             for name, w in zip(("AVG", "AVD", "ARG", "ARD"), s.wheels):
-                state = "cold" if w.temp_c < 70 else "hot" if w.temp_c > 105 else "ok"
+                lo, hi = (w.optimal_c - 15, w.optimal_c + 15) if w.optimal_c else (70, 105)
+                state = "cold" if w.temp_c < lo else "hot" if w.temp_c > hi else "ok"
                 wheels.append({"pos": name, "temp": round(w.temp_c), "pressure": round(w.pressure_bar, 2),
-                               "wear": round(w.wear_pct, 1), "state": state})
+                               "wear": round(w.wear_pct, 1), "state": state,
+                               "surface": round(w.surface_c) if w.surface_c is not None else None,
+                               "optimal": round(w.optimal_c) if w.optimal_c else None})
             self.last_tyres = wheels
         else:  # pas de mesure en ce moment : on garde la dernière mesure en piste
             wheels, stale = self.last_tyres, True
@@ -510,6 +535,8 @@ class Analyzer:
         res = self._resource(s)
         laps_left = res / per_lap if per_lap else None
 
+        if self.ref_time:
+            valid_laps = [l for l in valid_laps if l["time"] <= self.ref_time * 1.07]
         times = [l["time"] for l in valid_laps[-10:]]
         consistency = None
         if len(times) >= 3:
@@ -547,8 +574,8 @@ class Analyzer:
                 "tc": s.tc, "abs": s.abs, "motor_map": s.motor_map,
                 "in_pits": s.in_pits, "sector": s.sector,
             },
-            "sectors": {"lap": last_lap["lap"], "times": last_lap["sectors"], "status": last_lap["status"],
-                        "deltas": last_lap["deltas"], "ref_lap": last_lap.get("deltas_ref")} if last_lap and last_lap["sectors"] else None,
+            "sectors": {"lap": sector_lap["lap"], "times": sector_lap["sectors"], "status": sector_lap["status"],
+                        "deltas": sector_lap["deltas"], "ref_lap": sector_lap.get("deltas_ref")} if sector_lap else None,
             "map": self._map(),
             "analysis": None if analysis is None else {
                 "lap": analysis["lap"], "ref_lap": analysis["ref_lap"], "total": analysis["total"],

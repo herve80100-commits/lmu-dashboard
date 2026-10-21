@@ -5,8 +5,10 @@ from typing import List, Optional
 
 @dataclass
 class WheelSample:
-    temp_c: float = 0.0  # moyenne des 3 zones
-    temps_c: tuple = (0.0, 0.0, 0.0)
+    temp_c: float = 0.0  # température affichée : couche interne (comme le HUD du jeu), sinon surface
+    temps_c: tuple = (0.0, 0.0, 0.0)  # surface gauche / centre / droite
+    surface_c: Optional[float] = None  # moyenne de surface
+    optimal_c: Optional[float] = None  # température optimale du composé (LMU)
     pressure_bar: float = 0.0
     wear_pct: float = 0.0  # usure consommée, 0 = neuf
     slip: float = 0.0  # glissement longitudinal (négatif = blocage, positif = patinage)

@@ -102,11 +102,16 @@ def build_sample(info, vehicles, player, tel) -> Sample:
     wheels = []
     for w in tel.mWheels:
         temps = tuple(t - 273.15 for t in w.mTemperature)
+        surface = sum(temps) / 3
+        inner = [t for t in w.mTireInnerLayerTemperature if t > 200]
+        optimal = getattr(w, "mOptimalTemp", 0.0)
         ground = w.mLongitudinalGroundVel
         slip = w.mLongitudinalPatchVel / ground if abs(ground) > 3 else 0.0
         wheels.append(WheelSample(
-            temp_c=sum(temps) / 3,
+            temp_c=sum(inner) / len(inner) - 273.15 if len(inner) == 3 else surface,
             temps_c=temps,
+            surface_c=surface,
+            optimal_c=optimal if 30 < optimal < 200 else None,
             pressure_bar=w.mPressure / 100.0,
             wear_pct=max(0.0, (1.0 - w.mWear) * 100),
             slip=slip,

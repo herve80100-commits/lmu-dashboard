@@ -62,9 +62,28 @@ class AnalyzerTest(unittest.TestCase):
         self.assertAlmostEqual(sum(sec["times"]), a.laps[-1]["time"], places=3)
         self.assertEqual(len(snap["map"]["segments"]), len(CORNERS))
 
+    def test_official_lap_time_published_after_line_is_used(self):
+        a = Analyzer()
+        first, t1 = lap_samples(0, 50.0, 0.0)
+        for smp in first:
+            a.update(smp)
+        second, _ = lap_samples(1, 50.0, t1)
+        for i, smp in enumerate(second[:40]):
+            if i >= 10:  # le jeu publie le temps officiel 0,5 s après la ligne
+                smp.last_lap, smp.last_s1, smp.last_s2 = 39.95, 13.0, 26.5
+            a.update(smp)
+        lap = a.laps[-1]
+        self.assertEqual(lap["time"], 39.95)
+        self.assertAlmostEqual(lap["sectors"][2], 13.45)
+        self.assertEqual(a.ref_time, 39.95)
+        self.assertLessEqual(a.snapshot()["live"]["theoretical"], 39.95)
+
     def test_new_track_resets_reference(self):
         a = Analyzer()
-        for s in lap_samples(0, 50.0, 0.0)[0] + lap_samples(1, 50.0, 40.0)[0][:5]:
+        second = lap_samples(1, 50.0, 40.0)[0][:5]
+        for s in second:
+            s.last_lap = 40.0
+        for s in lap_samples(0, 50.0, 0.0)[0] + second:
             a.update(s)
         self.assertIsNotNone(a.ref)
         other = Sample(track="Autre", track_length=3000.0, laps_completed=0, lap_dist=10, speed=40)

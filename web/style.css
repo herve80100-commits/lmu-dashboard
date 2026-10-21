@@ -140,6 +140,8 @@ svg .mono { font-family: "JetBrains Mono", Consolas, monospace; }
 .badge.bad { background: rgba(229,72,77,.16); color: var(--bad-t); }
 .tyres { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
 .ty { background: var(--card2); border-radius: 8px; padding: 7px 9px; font-size: 12px; color: var(--t2); }
+.ty .tyh { display: flex; justify-content: space-between; gap: 4px; }
+.ty .tyh small { font-size: 10px; color: var(--t3); white-space: nowrap; }
 .ty b { display: block; font-size: 17px; color: var(--t1); font-family: "JetBrains Mono", Consolas, monospace; }
 .ty b.hot { color: var(--warn); } .ty b.cold { color: #6aa8f0; }
 .ty .w { height: 4px; border-radius: 2px; background: #2a2f3a; margin-top: 5px; }
